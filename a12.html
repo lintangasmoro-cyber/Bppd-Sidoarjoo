@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPPD Sidoarjo - Management System</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* CSS dari werr.css */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { height: 100%; font-family: 'Segoe UI', sans-serif; background: #f4f7f9; color: #333; }
+        .page { display: none; width: 100%; min-height: 100vh; }
+
+        /* --- LOGIN GLASSMORPHISM --- */
+        #loginPage {
+            background: linear-gradient(rgba(11, 26, 61, 0.8), rgba(11, 26, 61, 0.8)), url('https://via.placeholder.com/1920x1080'); /* Fallback jika gambar tidak ada */
+            background-size: cover; 
+            background-position: center;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.12); 
+            backdrop-filter: blur(15px);
+            padding: 50px; 
+            border-radius: 20px; 
+            width: 380px; 
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .login-box h2 { color: white; margin-bottom: 35px; }
+        .input-group { margin-bottom: 25px; border-bottom: 2px solid rgba(255, 255, 255, 0.5); }
+        .input-group input { width: 100%; background: transparent; border: none; color: white; padding: 10px 0; outline: none; }
+        .input-group input::placeholder { color: rgba(255,255,255,0.7); }
+
+        /* --- DASHBOARD NAV --- */
+        nav { background: white; padding: 0 40px; height: 75px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .nav-links { display: flex; gap: 20px; list-style: none; align-items: center; }
+        .btn-nav { background: #f0f3f7; padding: 8px 15px; border-radius: 8px; cursor: pointer; text-decoration: none; color: #444; font-weight: 500; font-size: 13px; transition: 0.3s; }
+        .btn-nav:hover { background: #0b1a3d; color: white !important; }
+
+        /* --- DROPDOWN & SUBMENU --- */
+        .dropdown { position: relative; }
+        .dropdown-content { display: none; position: absolute; background: white; min-width: 240px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 8px; z-index: 1000; top: 100%; }
+        .nested-dropdown { position: relative; }
+        .nested-content { display: none; position: absolute; left: 100%; top: 0; background: white; min-width: 160px; box-shadow: 4px 4px 12px rgba(0,0,0,0.1); border-radius: 8px; }
+        .nested-dropdown:hover > .nested-content { display: block; }
+        .dropdown:hover > .dropdown-content { display: block; }
+        .dropdown-content a { padding: 12px 16px; display: flex; justify-content: space-between; text-decoration: none; color: #333; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .dropdown-content a:hover { background: #f9f9f9; }
+
+        /* --- KPI CONTAINER --- */
+        .container { padding: 30px; }
+        .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .kpi-card { padding: 25px; border-radius: 15px; color: white; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .kpi-card select { background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; padding: 2px 5px; outline: none; }
+        .kpi-card select option { background: #0b1a3d; color: white; }
+
+        .chart-box { background: white; padding: 30px; border-radius: 20px; min-height: 450px; box-shadow: 0 5px 25px rgba(0,0,0,0.05); }
+
+        /* --- MODAL --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 450px; }
+    </style>
+</head>
+<body>
+
+    <div id="loginPage" class="page" style="display: flex;">
+        <div class="login-box">
+            <h2 style="color:white;">BPPD SIDOARJO</h2>
+            <form onsubmit="doLogin(event)">
+                <div class="input-group"><input type="text" placeholder="Username" required></div>
+                <div class="input-group"><input type="password" placeholder="Password" required></div>
+                <button type="submit" style="width:100%; padding:12px; background:white; color:#0b1a3d; border:none; border-radius:25px; font-weight:bold; cursor:pointer; transition: 0.3s;">MASUK</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainPage" class="page">
+        <nav>
+            <div style="font-weight:bold; color:#0b1a3d; font-size: 1.4rem;">BPPD SIDOARJO</div>
+            <ul class="nav-links">
+                <li><a onclick="updateChart('Hotel', 'bulanan')" class="btn-nav">Beranda</a></li>
+                <li class="dropdown">
+                    <a class="btn-nav">Statistik Pajak ▽</a>
+                    <div class="dropdown-content" id="taxMenu"></div>
+                </li>
+                <li><a onclick="toggleModal('inputModal')" class="btn-nav">✍️ Input Data Manual</a></li>
+                <li><a onclick="alert('Laporan diunduh')" class="btn-nav">📥 Unduh Laporan</a></li>
+                <li><a onclick="location.reload()" style="color:#d9534f; font-weight:bold; cursor:pointer; margin-left:10px;">Logout</a></li>
+            </ul>
+        </nav>
+
+        <div class="container">
+            <div class="kpi-container">
+                <div class="kpi-card" style="background: #0b1a3d;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 5px;">
+                        <p style="font-size: 12px; opacity: 0.9;">Realisasi Tahunan</p>
+                        <span id="txt-tahun-sel" style="font-size: 12px; font-weight: bold; color: #f39c12;"></span>
+                        <select onchange="updateKpiTahun(this.value)">
+                            <option value="" disabled selected>Pilih</option>
+                            <option value="2021">2021</option><option value="2022">2022</option>
+                            <option value="2023">2023</option><option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                    <h2 id="val-tahun">Rp 0 M</h2>
+                </div>
+
+                <div class="kpi-card" style="background: #1e3a8a;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 5px;">
+                        <p style="font-size: 12px; opacity: 0.9;">Realisasi Bulanan</p>
+                        <span id="txt-bulan-sel" style="font-size: 12px; font-weight: bold; color: #f39c12;"></span>
+                        <select onchange="updateKpiBulan(this.value)">
+                            <option value="" disabled selected>Pilih</option>
+                            <option value="Jan">Januari</option><option value="Feb">Februari</option>
+                            <option value="Mar">Maret</option><option value="Apr">April</option>
+                            <option value="Mei">Mei</option><option value="Jun">Juni</option>
+                            <option value="Jul">Juli</option><option value="Agu">Agustus</option>
+                            <option value="Sep">September</option><option value="Okt">Oktober</option>
+                            <option value="Nov">November</option><option value="Des">Desember</option>
+                        </select>
+                    </div>
+                    <h2 id="val-bulan">Rp 0 M</h2>
+                </div>
+
+                <div class="kpi-card" style="background: #28a745;"><h3>Pencapaian</h3><h2 id="val-capai">90.4%</h2></div>
+                <div class="kpi-card" style="background: #f39c12;"><h3 id="label-jenis" style="font-size: 14px;">Pajak Hotel</h3><h2 id="val-jenis">Rp 0 M</h2></div>
+            </div>
+
+            <h3 id="chart-title" style="margin-bottom:20px; color:#0b1a3d;">Statistik Pajak</h3>
+            <div class="chart-box"><canvas id="mainChart"></canvas></div>
+        </div>
+    </div>
+
+    <div id="inputModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom:20px; text-align:center;">Input Realisasi</h3>
+            <input type="number" id="inpNilai" placeholder="Masukkan Nilai (Rp)" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px; border:1px solid #ddd; outline: none;">
+            <button onclick="saveData()" style="width:100%; padding:12px; background:#0b1a3d; color:white; border:none; border-radius:8px; cursor:pointer;">SIMPAN</button>
+            <p onclick="toggleModal('inputModal')" style="text-align:center; color:red; margin-top:15px; cursor:pointer; font-size:12px;">Batalkan</p>
+        </div>
+    </div>
+
+    <script>
+        const taxes = [
+            {n: 'Hotel', i: '🏨'}, {n: 'Resto', i: '🍴'}, {n: 'Hiburan', i: '🎭'}, {n: 'Reklame', i: '📢'},
+            {n: 'PLN', i: '⚡'}, {n: 'Parkir', i: '🅿️'}, {n: 'Air Tanah', i: '💧'}, {n: 'BPHTB', i: '📜'},
+            {n: 'PBB', i: '🏡'}, {n: 'PKB', i: '🚗'}, {n: 'BBNKB', i: '📋'}, {n: 'PT Pos', i: '📮'}
+        ];
+
+        function doLogin(e) {
+            e.preventDefault();
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainPage').style.display = 'block';
+            updateChart('Hotel', 'bulanan');
+        }
+
+        // Render Dropdown Menu
+        document.getElementById('taxMenu').innerHTML = taxes.map(t => `
+            <div class="nested-dropdown">
+                <a><span>${t.i} ${t.n}</span> <span>▶</span></a>
+                <div class="nested-content">
+                    <a onclick="updateChart('${t.n}', 'bulanan')">Bulanan</a>
+                    <a onclick="updateChart('${t.n}', 'tahunan')">Tahunan</a>
+                    <a onclick="updateChart('${t.n}', 'jenis')">Realisasi Jenis</a>
+                </div>
+            </div>`).join('');
+
+        function updateKpiTahun(v) {
+            document.getElementById('txt-tahun-sel').innerText = v;
+            document.getElementById('val-tahun').innerText = `Rp ${(Math.random()*40+10).toFixed(1)} M`;
+        }
+
+        function updateKpiBulan(v) {
+            document.getElementById('txt-bulan-sel').innerText = v;
+            document.getElementById('val-bulan').innerText = `Rp ${(Math.random()*5+1).toFixed(1)} M`;
+        }
+
+        function updateChart(jenis, periode) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if(Chart.getChart('mainChart')) Chart.getChart('mainChart').destroy();
+            
+            document.getElementById('chart-title').innerText = `Statistik Pajak ${jenis} (${periode.charAt(0).toUpperCase() + periode.slice(1)})`;
+            document.getElementById('label-jenis').innerText = `Pajak ${jenis}`;
+            
+            const labels = periode === 'tahunan' ? ['2021','2022','2023','2024','2025'] : ['Jan','Feb','Mar','Apr','Mei','Jun'];
+            const dataVal = labels.map(() => Math.floor(Math.random()*30)+10);
+            document.getElementById('val-jenis').innerText = `Rp ${Math.floor(Math.random()*30)+10} M`;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ 
+                        label: 'Realisasi (Miliar Rp)', 
+                        data: dataVal, 
+                        backgroundColor: '#0b1a3d', 
+                        borderRadius: 5 
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function saveData() {
+            const val = document.getElementById('inpNilai').value;
+            if(!val) return alert('Masukkan nilai terlebih dahulu');
+            alert('Data ' + val + ' Berhasil Disimpan!');
+            document.getElementById('inpNilai').value = '';
+            toggleModal('inputModal');
+        }
+    </script>
+</body>
+</html>
